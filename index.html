@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Terminal</title>
+  <style>
+    /* Global Reset & Base */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'SF Mono', Menlo, Monaco, Consolas, "Courier New", monospace;
+    }
+
+    body, html {
+      height: 100%;
+      overflow: hidden;
+      background: #1e1e1e;
+      color: #ffffff;
+    }
+
+    /* Intro Screen - FULLY RESPONSIVE & SCROLLABLE */
+    #intro {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+  background: #000;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: center;
+      z-index: 1000;
+      transition: opacity 0.6s ease;
+      overflow-y: auto;
+      padding: 30px 20px;
+      text-align: center;
+    }
+
+    #intro h1 {
+      font-size: 3.5rem;
+      margin: 20px 0 10px;
+      color: #0f9d58;
+      text-shadow: 0 0 12px rgba(15, 157, 88, 0.6);
+      letter-spacing: 1px;
+      font-weight: 700;
+    }
+
+    #intro .subtitle {
+      font-size: 1.4rem;
+      color: #aaa;
+      margin-bottom: 20px;
+      font-weight: 500;
+    }
+
+    #intro p {
+      margin: 12px 0;
+      font-size: 1.1rem;
+      max-width: 750px;
+      color: #ddd;
+      line-height: 1.6;
+    }
+
+    #intro ul {
+      list-style: none;
+      padding: 0;
+      margin: 20px 0;
+      max-width: 700px;
+      width: 100%;
+      text-align: left;
+    }
+
+    #intro li {
+      margin: 10px 0;
+      font-size: 1.05rem;
+      color: #ccc;
+    }
+
+    #intro code {
+      background: rgba(0,0,0,0.3);
+      padding: 3px 7px;
+      border-radius: 5px;
+      font-size: 0.95em;
+      color: #0f9d58;
+    }
+
+    #startBtn {
+      margin: 30px 0;
+      padding: 16px 40px;
+      font-size: 1.4rem;
+      background: #0f9d58;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 6px 16px rgba(15, 157, 88, 0.4);
+      font-weight: 600;
+      min-width: 200px;
+    }
+
+    #startBtn:hover {
+      background: #0c7a44;
+      transform: translateY(-3px);
+      box-shadow: 0 8px 20px rgba(15, 157, 88, 0.5);
+    }
+
+    .local-run {
+      background: rgba(15, 157, 88, 0.1);
+      border: 1px solid #0f9d58;
+      padding: 16px;
+      border-radius: 10px;
+      margin: 30px auto;
+      max-width: 750px;
+      font-size: 1rem;
+      text-align: left;
+    }
+
+    .local-run code {
+      background: #000;
+      color: #0f9d58;
+      padding: 12px;
+      display: block;
+      border-radius: 6px;
+      overflow-x: auto;
+      margin: 10px 0;
+      font-size: 0.95em;
+    }
+
+    /* Ad container - centered */
+    .ad-container {
+      margin: 30px auto;
+      width: 100%;
+      max-width: 728px;
+      text-align: center;
+    }
+
+    /* Terminal Container */
+    #terminal-container {
+      display: none;
+      height: 100vh;
+      padding: 10px 10px 0 10px;
+      overflow: hidden;
+      background: #1e1e1e;
+      transition: background 0.4s ease;
+    }
+
+    .terminal-window {
+      max-width: 1100px;
+      margin: 0 auto;
+      background: #2d2d2d;
+      border-radius: 14px 14px 0 0;
+      box-shadow: 0 12px 36px rgba(0,0,0,0.6);
+      overflow: hidden;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .title-bar {
+      height: 38px;
+      background: linear-gradient(to bottom, #444, #333);
+      display: flex;
+      align-items: center;
+      padding-left: 14px;
+      gap: 9px;
+      border-bottom: 1px solid #222;
+      flex-shrink: 0;
+    }
+
+    .traffic-light {
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.3);
+    }
+
+    .red { background: #ff5f57; }
+    .yellow { background: #febc2e; }
+    .green { background: #28c840; }
+
+    .title {
+      margin-left: 12px;
+      font-size: 13.5px;
+      color: #ddd;
+      font-weight: 500;
+    }
+
+    .terminal-body {
+      flex: 1;
+      padding: 18px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      min-height: 0;
+      font-size: 16.5px;
+      line-height: 1.7;
+      -webkit-overflow-scrolling: touch;
+      scroll-behavior: smooth;
+    }
+
+    .line {
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 10px;
+      word-break: break-word;
+      width: 100%;
+    }
+
+    .prompt {
+      color: #0f9d58;
+      margin-right: 10px;
+      font-weight: 600;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+
+    .input-line {
+      display: flex;
+      align-items: center;
+      width: 100%;
+    }
+
+    #user-input {
+      background: transparent;
+      border: none;
+      outline: none;
+      color: #fff;
+      font-size: 16.5px;
+      flex: 1;
+      caret-color: #0f9d58;
+      padding: 0;
+      margin: 0;
+      min-width: 0;
+    }
+
+    .cursor {
+      display: inline-block;
+      width: 9px;
+      height: 1.4em;
+      background: #0f9d58;
+      animation: blink 1s step-end infinite;
+      margin-left: 3px;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    .output {
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      margin-top: 6px;
+      color: #f0f0f0;
+      line-height: 1.6;
+      width: 100%;
+      position: relative;
+    }
+
+    /* COPY BUTTON */
+    .copy-btn {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      background: rgba(15,157,88,0.8);
+      color: white;
+      border: none;
+      padding: 4px 8px;
+      font-size: 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .output:hover .copy-btn {
+      opacity: 1;
+    }
+
+    .copy-btn:hover {
+      background: #0f9d58;
+    }
+
+    .history-output {
+      background: rgba(255,255,255,0.05);
+      padding: 12px;
+      border-radius: 8px;
+      margin-top: 10px;
+      max-height: 400px;
+      overflow-y: auto;
+      font-size: 14px;
+      width: 100%;
+    }
+
+    .command-list {
+      margin-top: 24px;
+      padding: 18px;
+      background: rgba(255,255,255,0.07);
+      border-radius: 10px;
+      font-size: 14.5px;
+      border: 1px solid rgba(255,255,255,0.1);
+      width: 100%;
+    }
+
+    .command-list h3 {
+      color: #0f9d58;
+      margin-bottom: 10px;
+      font-size: 16px;
+    }
+
+    .command-list ul {
+      list-style: none;
+      padding-left: 0;
+    }
+
+    .command-list li {
+      margin: 8px 0;
+      color: #ccc;
+    }
+
+    .command-list code {
+      background: rgba(0,0,0,0.3);
+      padding: 3px 7px;
+      border-radius: 5px;
+      font-family: inherit;
+      font-size: 0.95em;
+      color: #0f9d58;
+    }
+
+    .model-badge {
+      display: inline-block;
+      background: #0f9d58;
+      color: #000;
+      font-weight: bold;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.8em;
+      margin-left: 8px;
+    }
+
+    /* RESPONSIVE FIXES */
+    @media (max-width: 768px) {
+      #intro {
+        padding: 20px 15px;
+      }
+      #intro h1 {
+        font-size: 2.8rem;
+        margin: 15px 0 8px;
+      }
+      #intro .subtitle {
+        font-size: 1.2rem;
+      }
+      #intro p, #intro li {
+        font-size: 1rem;
+      }
+      #startBtn {
+        padding: 14px 32px;
+        font-size: 1.3rem;
+        margin: 25px 0;
+      }
+      .ad-container {
+        max-width: 320px;
+      }
+      .terminal-body {
+        font-size: 15.5px;
+        padding: 14px;
+      }
+      .title-bar {
+        height: 36px;
+      }
+      .traffic-light {
+        width: 12px;
+        height: 12px;
+      }
+      .local-run {
+        font-size: 0.95rem;
+        padding: 12px;
+      }
+      .local-run code {
+        font-size: 0.85em;
+      }
+    }
+
+    @media (max-width: 480px) {
+      #intro h1 {
+        font-size: 2.2rem;
+      }
+      #intro .subtitle {
+        font-size: 1.1rem;
+      }
+      #intro p, #intro li {
+        font-size: 0.95rem;
+      }
+      #startBtn {
+        padding: 12px 28px;
+        font-size: 1.2rem;
+        margin: 20px 0;
+      }
+      .terminal-body {
+        font-size: 14.5px;
+        padding: 10px;
+      }
+      .command-list {
+        padding: 12px;
+        font-size: 13.5px;
+      }
+      .local-run {
+        font-size: 0.9rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Intro Screen - FULLY VISIBLE & RESPONSIVE -->
+  <div id="intro">
+    <h1>AI Terminal</h1>
+    <p class="subtitle">AI-Powered Command Line Interface</p>
+    <p>Run <strong>Grok-3</strong>, <strong>GPT-4o</strong>, <strong>Gemini-2.5-Flash</strong>, <strong>GLM-4.5-Air</strong>, <strong>Qwen2.5-VL-32B (Vision)</strong>, <strong>TurboAI (ChatGPT-3)</strong>, and <strong>SearchAI (Google AI)</strong> in your browser.</p>
+    <p>Use <code>sudo-</code> prefixed commands to control the AI.</p>
+
+    <!-- LOCAL RUN GUIDE -->
+    <div class="local-run">
+      <strong>Run Locally on Your PC (No Internet After First Load)</strong><br>
+      Paste this in <strong>PowerShell or CMD</strong>:
+      <code>powershell -Command "Invoke-WebRequest 'https://raw.githubusercontent.com/imranfizzy/vip-a-terminal/refs/heads/main/index.html' -OutFile %TEMP%\ai.html; start %TEMP%\ai.html"</code>
+      <em>→ Opens AI Terminal instantly in your default browser.</em>
+    </div>
+
+    <!-- AD SCRIPT - ONLY ON INTRO -->
+    <div class="ad-container">
+      <script type='text/javascript' src='//nightsclotheshazardous.com/2c/f4/68/2cf468fc2baaad6381d241f9e8c5f41d.js'></script>
+    </div>
+
+    <!-- START BUTTON -->
+    <button id="startBtn">Launch AI Terminal</button>
+
+    <!-- FULL COMMAND REFERENCE -->
+    <div style="margin-top: 36px; text-align: left; max-width: 700px; width: 100%;">
+      <h3 style="color: #0f9d58; margin-bottom: 12px; font-size: 1.3rem; text-align: center;">Command Reference:</h3>
+      <ul>
+        <li><code>sudo-get/[your question]</code> → Ask the current AI model</li>
+        <li><code>sudo-clear/</code> → Clear the screen</li>
+        <li><code>sudo-save/</code> → Download chat as .txt</li>
+        <li><code>sudo-color/[color]</code> → Change background (red, blue, green, etc.)</li>
+        <li><code>sudo-gethis/</code> → Show full chat history</li>
+        <li><code>sudo-getmodel/nanoblue</code> → Switch to <strong>Grok-3 (xAI)</strong></li>
+        <li><code>sudo-getmodel/nanoblack</code> → Switch to <strong>GPT-4o (OpenAI)</strong></li>
+        <li><code>sudo-getmodel/tinynano</code> → Switch to <strong>Gemini-2.5-Flash</strong></li>
+        <li><code>sudo-getmodel/bashai</code> → Switch to <strong>GLM-4.5-Air (Free)</strong></li>
+        <li><code>sudo-getmodel/minyai</code> → Switch to <strong>Qwen2.5-VL-32B (Vision)</strong></li>
+        <li><code>sudo-getmodel/turboai</code> → Switch to <strong>TurboAI (ChatGPT-3)</strong></li>
+        <li><code>sudo-getmodel/searchai</code> → Switch to <strong>SearchAI (Google AI)</strong></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Terminal -->
+  <div id="terminal-container">
+    <div class="terminal-window">
+      <div class="title-bar">
+        <div class="traffic-light red"></div>
+        <div class="traffic-light yellow"></div>
+        <div class="traffic-light green"></div>
+        <div class="title">AI Terminal — Multi-Model AI Chat</div>
+      </div>
+      <div class="terminal-body" id="terminal">
+        <div class="line"><span class="prompt">ai@terminal</span> ~ % Welcome to <strong>AI Terminal</strong>. Type a command to begin.<span class="model-badge" id="current-model">Grok-3</span></div>
+        <div class="line"><span class="prompt">ai@terminal</span> ~ % <span id="command-list-toggle" style="color: #0f9d58; cursor: pointer; text-decoration: underline; font-weight: 600;">Show command reference</span></div>
+
+        <div class="command-list" id="command-list" style="display: none;">
+          <h3>Available Commands:</h3>
+          <ul>
+            <li><code>sudo-get/[question]</code> → Ask the AI</li>
+            <li><code>sudo-clear/</code> → Clear screen</li>
+            <li><code>sudo-save/</code> → Save chat log</li>
+            <li><code>sudo-color/[color]</code> → Change theme color</li>
+            <li><code>sudo-gethis/</code> → View full history</li>
+            <li><code>sudo-getmodel/nanoblue</code> → Use Grok-3</li>
+            <li><code>sudo-getmodel/nanoblack</code> → Use GPT-4o</li>
+            <li><code>sudo-getmodel/tinynano</code> → Use Gemini-2.5-Flash</li>
+            <li><code>sudo-getmodel/bashai</code> → Use GLM-4.5-Air (Free)</li>
+            <li><code>sudo-getmodel/minyai</code> → Use Qwen2.5-VL-32B (Vision)</li>
+            <li><code>sudo-getmodel/turboai</code> → Use TurboAI (ChatGPT-3)</li>
+            <li><code>sudo-getmodel/searchai</code> → Use SearchAI (Google AI)</li>
+          </ul>
+        </div>
+
+        <div class="input-line">
+          <span class="prompt">ai@terminal</span> ~ % 
+          <input type="text" id="user-input" autocomplete="off" autofocus spellcheck="false" />
+          <span class="cursor"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // === ALL 7 AI MODELS (Including SearchAI via google-ai-mode) ===
+    const API_ENDPOINTS = {
+      grok: {
+        name: "Grok-3",
+        url: 'https://xai-all-models.p.rapidapi.com/chat/completions',
+        method: 'POST',
+        headers: {
+          'x-rapidapi-key': '34474cce90msh36c7aa14bcf6fd4p1946e1jsnb5a143185646',
+          'x-rapidapi-host': 'xai-all-models.p.rapidapi.com',
+          'Content-Type': 'application/json'
+        },
+        bodyTemplate: (msg) => ({
+          model: 'grok-3',
+          messages: [{ role: 'user', content: msg }]
+        }),
+        parse: (data) => data.choices?.[0]?.message?.content?.trim() || 'No response.'
+      },
+      gpt: {
+        name: "GPT-4o",
+        url: 'https://chatgpt-42.p.rapidapi.com/gpt4o',
+        method: 'POST',
+        headers: {
+          'x-rapidapi-key': '34474cce90msh36c7aa14bcf6fd4p1946e1jsnb5a143185646',
+          'x-rapidapi-host': 'chatgpt-42.p.rapidapi.com',
+          'Content-Type': 'application/json'
+        },
+        bodyTemplate: (msg) => ({
+          messages: [{ role: 'user', content: msg }],
+          web_access: false
+        }),
+        parse: (data) => data.result?.trim() || 'No response.'
+      },
+      gemini: {
+        name: "Gemini-2.5-Flash",
+        url: 'https://gemini-ai-all-models.p.rapidapi.com/chat/completions',
+        method: 'POST',
+        headers: {
+          'x-rapidapi-key': '34474cce90msh36c7aa14bcf6fd4p1946e1jsnb5a143185646',
+          'x-rapidapi-host': 'gemini-ai-all-models.p.rapidapi.com',
+          'Content-Type': 'application/json'
+        },
+        bodyTemplate: (msg) => ({
+          model: 'gemini-2.5-flash',
+          messages: [{ role: 'user', content: msg }]
+        }),
+        parse: (data) => {
+          try {
+            const parsed = typeof data === 'string' ? JSON.parse(data) : data;
+            return parsed.choices?.[0]?.message?.content?.trim() || parsed.result || 'No response.';
+          } catch {
+            return (typeof data === 'string' ? data : JSON.stringify(data)).trim() || 'No response.';
+          }
+        }
+      },
+      bashai: {
+        name: "GLM-4.5-Air (Free)",
+        url: 'https://openrouter.ai/api/v1/chat/completions',
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer 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',
+          'Content-Type': 'application/json'
+        },
+        bodyTemplate: (msg) => ({
+          model: 'z-ai/glm-4.5-air:free',
+          messages: [{ role: 'user', content: msg }]
+        }),
+        parse: (data) => data.choices?.[0]?.message?.content?.trim() || 'No response.'
+      },
+      minyai: {
+        name: "Qwen2.5-VL-32B (Vision)",
+        url: 'https://openrouter.ai/api/v1/chat/completions',
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer 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',
+          'Content-Type': 'application/json'
+        },
+        bodyTemplate: (msg) => {
+          const imageMatch = msg.match(/https?:\/\/[^\s]+/);
+          const text = msg.replace(/https?:\/\/[^\s]+/g, '').trim();
+          const content = [{ type: 'text', text: text || 'Describe this image' }];
+          if (imageMatch) {
+            content.push({ type: 'image_url', image_url: { url: imageMatch[0] } });
+          }
+          return {
+            model: 'qwen/qwen2.5-vl-32b-instruct:free',
+            messages: [{ role: 'user', content }]
+          };
+        },
+        parse: (data) => data.choices?.[0]?.message?.content?.trim() || 'No response.'
+      },
+      turboai: {
+        name: "TurboAI (ChatGPT-3)",
+        url: 'https://chatgpt-api8.p.rapidapi.com/',
+        method: 'POST',
+        headers: {
+          'x-rapidapi-key': '34474cce90msh36c7aa14bcf6fd4p1946e1jsnb5a143185646',
+          'x-rapidapi-host': 'chatgpt-api8.p.rapidapi.com',
+          'Content-Type': 'application/json'
+        },
+        bodyTemplate: (msg) => [
+          { content: 'You are a helpful AI assistant.', role: 'system' },
+          { content: msg, role: 'user' }
+        ],
+        parse: (data) => {
+          try {
+            const parsed = typeof data === 'string' ? JSON.parse(data) : data;
+            return parsed.text?.trim() || parsed.message?.trim() || 'No response.';
+          } catch {
+            return (typeof data === 'string' ? data : JSON.stringify(data)).trim() || 'No response.';
+          }
+        }
+      },
+      searchai: {
+        name: "SearchAI (Google AI)",
+        url: (prompt) => `https://google-ai-mode.p.rapidapi.com/ai-mode?prompt=${encodeURIComponent(prompt)}&gl=us&hl=en`,
+        method: 'GET',
+        headers: {
+          'x-rapidapi-key': '34474cce90msh36c7aa14bcf6fd4p1946e1jsnb5a143185646',
+          'x-rapidapi-host': 'google-ai-mode.p.rapidapi.com'
+        },
+        bodyTemplate: () => null,
+        parse: (data) => {
+          try {
+            const parsed = typeof data === 'string' ? JSON.parse(data) : data;
+            return parsed.response?.trim() || parsed.text?.trim() || 'No response.';
+          } catch {
+            return (typeof data === 'string' ? data : JSON.stringify(data)).trim() || 'No response.';
+          }
+        }
+      }
+    };
+
+    let currentModel = 'grok';
+    let chatHistory = [];
+    let userIsTyping = false;
+
+    // DOM Elements
+    const intro = document.getElementById('intro');
+    const startBtn = document.getElementById('startBtn');
+    const terminalContainer = document.getElementById('terminal-container');
+    const terminal = document.getElementById('terminal');
+    const commandList = document.getElementById('command-list');
+    const commandToggle = document.getElementById('command-list-toggle');
+    const modelBadge = document.getElementById('current-model');
+
+    // === Launch Terminal ===
+    startBtn.addEventListener('click', () => {
+      intro.style.opacity = '0';
+      setTimeout(() => {
+        intro.style.display = 'none';
+        terminalContainer.style.display = 'block';
+        focusInput();
+      }, 600);
+    });
+
+    // === Toggle Command List ===
+    commandToggle.addEventListener('click', () => {
+      const isHidden = commandList.style.display === 'none';
+      commandList.style.display = isHidden ? 'block' : 'none';
+      commandToggle.textContent = isHidden ? 'Hide command reference' : 'Show command reference';
+    });
+
+    // === Update Model Badge ===
+    function updateModelBadge() {
+      modelBadge.textContent = API_ENDPOINTS[currentModel].name;
+    }
+
+    // === Focus Input Helper ===
+    function focusInput() {
+      const input = document.querySelector('#user-input');
+      if (input) input.focus();
+    }
+
+    // === Input Handling ===
+    function attachInputListener(input) {
+      input.addEventListener('keydown', async (e) => {
+        if (e.key === 'Enter') {
+          const command = input.value.trim();
+          if (!command) return;
+
+          userIsTyping = false;
+          addLine(`<span class="prompt">ai@terminal</span> ~ % ${escapeHtml(command)}`, 'input');
+          input.disabled = true;
+          input.nextElementSibling.style.display = 'none';
+
+          chatHistory.push({ role: 'user', content: command, model: currentModel });
+
+          await processCommand(command);
+          createNewInputLine();
+        }
+      });
+
+      input.addEventListener('focus', () => {
+        userIsTyping = true;
+      });
+
+      input.addEventListener('blur', () => {
+        setTimeout(() => {
+          if (!userIsTyping) focusInput();
+        }, 100);
+      });
+    }
+
+    function createNewInputLine() {
+      const line = document.createElement('div');
+      line.className = 'input-line';
+      line.innerHTML = `
+        <span class="prompt">ai@terminal</span> ~ % 
+        <input type="text" id="user-input" autocomplete="off" spellcheck="false" />
+        <span class="cursor"></span>
+      `;
+      terminal.appendChild(line);
+      const newInput = line.querySelector('#user-input');
+      newInput.focus();
+      attachInputListener(newInput);
+      scrollToBottomIfAtBottom();
+    }
+
+    // === Smart Scroll ===
+    function scrollToBottomIfAtBottom() {
+      const container = terminal;
+      const isAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 50;
+      if (isAtBottom || userIsTyping) {
+        setTimeout(() => {
+          container.scrollTop = container.scrollHeight;
+        }, 10);
+      }
+    }
+
+    // === Command Processor ===
+    async function processCommand(cmd) {
+      if (cmd.startsWith('sudo-get/')) {
+        const question = cmd.slice(9).trim();
+        if (!question) {
+          addOutput('Error: Please provide a prompt after <code>sudo-get/</code>');
+          return;
+        }
+        addOutput('<em>Thinking...</em>');
+        const response = await queryAI(question);
+        replaceLastOutput(response + `<button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>`);
+        chatHistory.push({ role: 'ai', content: response, model: currentModel });
+      }
+      else if (cmd === 'sudo-clear/') {
+        terminal.innerHTML = '';
+        addLine(`<span class="prompt">ai@terminal</span> ~ % Terminal cleared.`, 'output');
+        chatHistory = [];
+        createNewInputLine();
+      }
+      else if (cmd === 'sudo-save/') {
+        saveChat();
+      }
+      else if (cmd.startsWith('sudo-color/')) {
+        const color = cmd.slice(11).trim().toLowerCase();
+        changeThemeColor(color);
+      }
+      else if (cmd === 'sudo-gethis/') {
+        showHistory();
+      }
+      else if (cmd === 'sudo-getmodel/nanoblue') {
+        currentModel = 'grok'; updateModelBadge(); addOutput(`Model switched to <strong>Grok-3 (xAI)</strong>`);
+      }
+      else if (cmd === 'sudo-getmodel/nanoblack') {
+        currentModel = 'gpt'; updateModelBadge(); addOutput(`Model switched to <strong>GPT-4o (OpenAI)</strong>`);
+      }
+      else if (cmd === 'sudo-getmodel/tinynano') {
+        currentModel = 'gemini'; updateModelBadge(); addOutput(`Model switched to <strong>Gemini-2.5-Flash</strong>`);
+      }
+      else if (cmd === 'sudo-getmodel/bashai') {
+        currentModel = 'bashai'; updateModelBadge(); addOutput(`Model switched to <strong>GLM-4.5-Air (Free)</strong>`);
+      }
+      else if (cmd === 'sudo-getmodel/minyai') {
+        currentModel = 'minyai'; updateModelBadge(); addOutput(`Model switched to <strong>Qwen2.5-VL-32B (Vision)</strong><br><em>Include image URL in your prompt to analyze.</em>`);
+      }
+      else if (cmd === 'sudo-getmodel/turboai') {
+        currentModel = 'turboai'; updateModelBadge(); addOutput(`Model switched to <strong>TurboAI (ChatGPT-3)</strong>`);
+      }
+      else if (cmd === 'sudo-getmodel/searchai') {
+        currentModel = 'searchai'; updateModelBadge(); addOutput(`Model switched to <strong>SearchAI (Google AI)</strong><br><em>Best for factual, step-by-step answers.</em>`);
+      }
+      else {
+        addOutput(`Unknown command: <code>${escapeHtml(cmd)}</code><br>Use <span id="command-list-toggle" style="color:#0f9d58; text-decoration:underline; cursor:pointer;">Show command reference</span> for help.`);
+        document.querySelectorAll('#command-list-toggle').forEach(el => {
+          el.addEventListener('click', () => {
+            commandList.style.display = 'block';
+            commandToggle.textContent = 'Hide command reference';
+          });
+        });
+      }
+    }
+
+    // === COPY TO CLIPBOARD ===
+    window.copyToClipboard = function(btn) {
+      const text = btn.parentElement.textContent.replace('Copy', '').trim();
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = 'Copied!';
+        setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+      }).catch(() => {
+        btn.textContent = 'Failed';
+        setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+      });
+    };
+
+    // === AI Query ===
+    async function queryAI(message) {
+      const api = API_ENDPOINTS[currentModel];
+      const isGet = api.method === 'GET';
+      const url = isGet ? api.url(message) : api.url;
+      const body = isGet ? null : JSON.stringify(api.bodyTemplate(message));
+
+      try {
+        const response = await fetch(url, {
+          method: api.method,
+          headers: api.headers,
+          body: body
+        });
+
+        if (!response.ok) {
+          const err = await response.text();
+          throw new Error(`HTTP ${response.status}: ${err.substring(0, 200)}`);
+        }
+
+        const data = await (isGet ? response.text() : response.json());
+        return api.parse(data);
+      } catch (err) {
+        console.error('AI Error:', err);
+        return `<span style="color:#ff6b6b;">Error: ${escapeHtml(err.message)}</span>`;
+      }
+    }
+
+    // === Show History ===
+    function showHistory() {
+      if (chatHistory.length === 0) {
+        addOutput('<em>No history yet.</em>');
+        return;
+      }
+
+      let historyHTML = '<div class="history-output"><strong>Chat History:</strong><br><br>';
+      chatHistory.forEach((entry, i) => {
+        const role = entry.role === 'user' ? 'You' : 'AI';
+        const model = entry.role === 'ai' ? ` (${API_ENDPOINTS[entry.model].name})` : '';
+        historyHTML += `<strong>${i+1}. ${role}${model}:</strong> ${escapeHtml(entry.content).replace(/\n/g, '<br>')}<br><br>`;
+      });
+      historyHTML += '</div>';
+      addOutput(historyHTML);
+    }
+
+    // === Output Helpers ===
+    function addLine(html, type = 'output') {
+      const line = document.createElement('div');
+      line.className = 'line';
+      line.innerHTML = type === 'input' ? html : `<div class="output">${html}</div>`;
+      terminal.appendChild(line);
+      scrollToBottomIfAtBottom();
+    }
+
+    function addOutput(text) {
+      const line = document.createElement('div');
+      line.className = 'line';
+      line.innerHTML = `<div class="output">${text}</div>`;
+      terminal.appendChild(line);
+      scrollToBottomIfAtBottom();
+    }
+
+    function replaceLastOutput(text) {
+      const outputs = terminal.querySelectorAll('.output');
+      if (outputs.length > 0) {
+        const last = outputs[outputs.length - 1];
+        last.innerHTML = text;
+      }
+    }
+
+    // === Save Chat ===
+    function saveChat() {
+      const text = chatHistory.map((h, i) => {
+        const role = h.role === 'user' ? 'You' : 'AI';
+        const model = h.role === 'ai' ? ` [${API_ENDPOINTS[h.model].name}]` : '';
+        return `${i+1}. ${role}${model}:\n${h.content.replace(/<[^>]*>/g, '')}\n`;
+      }).join('\n');
+
+      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `AITerminal-Chat-${new Date().toISOString().slice(0,10)}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      addOutput('<em>Chat saved as .txt file</em>');
+    }
+
+    // === Theme Color ===
+    function changeThemeColor(color) {
+      const themes = {
+        black: '#1e1e1e', default: '#1e1e1e',
+        red: '#2d0000', blue: '#00002d', green: '#002d00',
+        purple: '#2d002d', cyan: '#002d2d', orange: '#2d1a00',
+        pink: '#2d002d', yellow: '#2d2d00'
+      };
+
+      if (themes[color]) {
+        terminalContainer.style.background = themes[color];
+        addOutput(`Theme changed to <strong>${color}</strong>`);
+      } else if (color === '') {
+        addOutput('Usage: <code>sudo-color/[color]</code>');
+      } else {
+        addOutput(`Invalid color: <code>${color}</code><br>Try: red, blue, green, etc.`);
+      }
+    }
+
+    // === Escape HTML ===
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // === Auto-focus ===
+    document.addEventListener('click', (e) => {
+      if (e.target.tagName === 'INPUT') return;
+      focusInput();
+    });
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      updateModelBadge();
+      const firstInput = document.querySelector('#user-input');
+      if (firstInput) {
+        attachInputListener(firstInput);
+        firstInput.focus();
+      }
+    });
+  </script>
+</body>
+</html>
